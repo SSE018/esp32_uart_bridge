@@ -51,7 +51,7 @@
 #define UBRIDGE_UART_BAUD_RATE CONFIG_UBRIDGE_UART_BAUD_RATE
 #define UBRIDGE_TASK_STACK_SIZE CONFIG_UBRIDGE_TASK_STACK_SIZE
 
-#define BUF_SIZE 512
+#define BUF_SIZE 16384
 
 #define DVAL2(x) #x
 #define DVAL(x) DVAL2(x)
@@ -98,8 +98,8 @@ static void bridge_task(void *arg) {
 	dfu_mode();
 
 	/* Configure USB-CDC */
-	usb_serial_jtag_driver_config_t usb_serial_config = {.tx_buffer_size = 128,
-														 .rx_buffer_size = 128};
+	usb_serial_jtag_driver_config_t usb_serial_config = {
+		.tx_buffer_size = 16384, .rx_buffer_size = 163384};
 
 	ESP_ERROR_CHECK(usb_serial_jtag_driver_install(&usb_serial_config));
 
@@ -132,21 +132,22 @@ static void bridge_task(void *arg) {
 								 UBRIDGE_PIN_CTS));
 
 	/* Configure a bridge buffer for the incoming data */
-	uint8_t *data = (uint8_t *)malloc(BUF_SIZE);
+	uint8_t *txdata = (uint8_t *)malloc(BUF_SIZE);
+	uint8_t *rxdata = (uint8_t *)malloc(BUF_SIZE);
 
 	while (true) {
 
-		int len = usb_serial_jtag_read_bytes(data, BUF_SIZE,
-											 500 / portTICK_PERIOD_MS);
+		int len = usb_serial_jtag_read_bytes(txdata, BUF_SIZE,
+											 10 / portTICK_PERIOD_MS);
 		if (len > 0) {
-			uart_write_bytes(UBRIDGE_UART_PORT_NUM, (const char *)data, len);
+			uart_write_bytes(UBRIDGE_UART_PORT_NUM, (const char *)txdata, len);
 			uart_flush(UBRIDGE_UART_PORT_NUM);
 		}
 
-		len = uart_read_bytes(UBRIDGE_UART_PORT_NUM, data, (BUF_SIZE),
-							  500 / portTICK_PERIOD_MS);
+		len = uart_read_bytes(UBRIDGE_UART_PORT_NUM, rxdata, (BUF_SIZE),
+							  10 / portTICK_PERIOD_MS);
 		if (len > 0) {
-			usb_serial_jtag_write_bytes(data, len, 500 / portTICK_PERIOD_MS);
+			usb_serial_jtag_write_bytes(rxdata, len, 500 / portTICK_PERIOD_MS);
 			usb_serial_jtag_ll_txfifo_flush();
 		}
 	}
