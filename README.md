@@ -1,6 +1,10 @@
 | Supported Target | ESP32-C3 |
 | ---------------- | -------- |
 
+# modded
+
+modded for esp32-s3 and buffer size
+
 # ESP32-C3 UART Bridge
 
 The ESP32-C3 UART Bridge is an ESP-IDF project. This makes the ESP32-C3 act as USB to serial UART interface like FT232R or CP210x.
